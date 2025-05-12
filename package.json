@@ -18,6 +18,10 @@
   "homepage": "https://github.com/dompet-juara/backend#readme",
   "dependencies": {
     "@hapi/hapi": "^21.4.0",
-    "dompet-juara-be": "file:"
+    "@supabase/supabase-js": "^2.49.4",
+    "argon2": "^0.43.0",
+    "dompet-juara-be": "file:",
+    "dotenv": "^16.5.0",
+    "jsonwebtoken": "^9.0.2"
   }
 }
