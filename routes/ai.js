@@ -2,13 +2,34 @@
 
 const axios = require('axios');
 const { getDummyAIRecommendations } = require('../utils/dummyData');
-const { generateChatResponse } = require('../services/geminiService');
 
-const AI_FEATURE_NAMES = [
+const INTERNAL_AI_FEATURE_NAMES = [
     "Gaji", "Tabungan_Lama", "Investasi", "Pemasukan_Lainnya", "Bahan_Pokok",
     "Protein_Gizi", "Tempat_Tinggal", "Sandang", "Konsumsi_Praktis", "Barang_Jasa_Sekunder",
     "Pengeluaran_Tidak_Esensial", "Pajak", "Asuransi", "Sosial_Budaya", "Tabungan_Investasi"
 ];
+
+const FLASK_API_EXPECTED_FEATURE_NAMES = [
+    "Gaji",
+    "Tabungan Lama",
+    "Investasi",
+    "Pemasukan Lainnya",
+    "Bahan Pokok",
+    "Protein & Gizi Tambahan",
+    "Tempat Tinggal",
+    "Sandang",
+    "Konsumsi Praktis",
+    "Barang & Jasa Sekunder",
+    "Pengeluaran Tidak Esensial",
+    "Pajak",
+    "Asuransi",
+    "Sosial & Budaya",
+    "Tabungan / Investasi"
+];
+
+if (INTERNAL_AI_FEATURE_NAMES.length !== FLASK_API_EXPECTED_FEATURE_NAMES.length) {
+    console.error("KRITIS: INTERNAL_AI_FEATURE_NAMES dan FLASK_API_EXPECTED_FEATURE_NAMES tidak memiliki panjang yang sama!");
+}
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL;
 
@@ -21,7 +42,33 @@ if (!process.env.GEMINI_API_KEY) {
 
 function mapCategoryToFeatureName(dbCategoryName) {
     if (!dbCategoryName) return null;
-    return dbCategoryName.replace(/ /g, "_");
+
+    const nameMapping = {
+        "Gaji": "Gaji",
+        "Tabungan Lama": "Tabungan_Lama",
+        "Investasi": "Investasi",
+        "Pemasukan Lainnya": "Pemasukan_Lainnya",
+
+        "Bahan Pokok": "Bahan_Pokok",
+        "Protein Gizi": "Protein_Gizi",
+        "Tempat Tinggal": "Tempat_Tinggal",
+        "Sandang": "Sandang",
+        "Konsumsi Praktis": "Konsumsi_Praktis",
+        "Barang Jasa Sekunder": "Barang_Jasa_Sekunder",
+        "Pengeluaran Tidak Esensial": "Pengeluaran_Tidak_Esensial",
+        "Pajak": "Pajak",
+        "Asuransi": "Asuransi",
+        "Sosial Budaya": "Sosial_Budaya",
+        "Tabungan Investasi": "Tabungan_Investasi"
+    };
+
+    const mappedName = nameMapping[dbCategoryName];
+    if (mappedName) {
+        return mappedName;
+    } else {
+        console.warn(`mapCategoryToFeatureName: Category '${dbCategoryName}' not found in explicit mapping. Using generic conversion.`);
+        return dbCategoryName.replace(/ & /g, "_").replace()
+    }
 }
 
 async function getFinancialDataForAI(supabase, userId) {
@@ -29,7 +76,7 @@ async function getFinancialDataForAI(supabase, userId) {
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
     const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999).toISOString();
 
-    const financialInput = AI_FEATURE_NAMES.reduce((acc, name) => {
+    const financialInputInternal = INTERNAL_AI_FEATURE_NAMES.reduce((acc, name) => {
         acc[name] = 0.0;
         return acc;
     }, {});
@@ -49,13 +96,15 @@ async function getFinancialDataForAI(supabase, userId) {
     incomeData.forEach(item => {
         if (item.kategori_pemasukan && item.kategori_pemasukan.nama) {
             const featureName = mapCategoryToFeatureName(item.kategori_pemasukan.nama);
-            if (financialInput.hasOwnProperty(featureName)) {
-                financialInput[featureName] += parseFloat(item.jumlah);
+            if (financialInputInternal.hasOwnProperty(featureName)) {
+                financialInputInternal[featureName] += parseFloat(item.jumlah);
+            } else {
+                console.warn(`Unmapped income category from DB to internal feature name: DB='${item.kategori_pemasukan.nama}', MappedTo='${featureName}'`);
             }
         } else if (item.jumlah) {
             const featureNamePemasukanLainnya = "Pemasukan_Lainnya";
-            if (financialInput.hasOwnProperty(featureNamePemasukanLainnya)) {
-                financialInput[featureNamePemasukanLainnya] += parseFloat(item.jumlah);
+            if (financialInputInternal.hasOwnProperty(featureNamePemasukanLainnya)) {
+                financialInputInternal[featureNamePemasukanLainnya] += parseFloat(item.jumlah);
             }
         }
     });
@@ -75,12 +124,30 @@ async function getFinancialDataForAI(supabase, userId) {
     outcomeData.forEach(item => {
         if (item.kategori_pengeluaran && item.kategori_pengeluaran.nama) {
             const featureName = mapCategoryToFeatureName(item.kategori_pengeluaran.nama);
-            if (financialInput.hasOwnProperty(featureName)) {
-                financialInput[featureName] += parseFloat(item.jumlah);
+            if (financialInputInternal.hasOwnProperty(featureName)) {
+                financialInputInternal[featureName] += parseFloat(item.jumlah);
+            } else {
+                console.warn(`Unmapped outcome category from DB to internal feature name: DB='${item.kategori_pengeluaran.nama}', MappedTo='${featureName}'`);
             }
         }
     });
-    return financialInput;
+
+    const financialDataForFlaskAPI = {};
+    for (let i = 0; i < INTERNAL_AI_FEATURE_NAMES.length; i++) {
+        const internalName = INTERNAL_AI_FEATURE_NAMES[i];
+        const flaskApiName = FLASK_API_EXPECTED_FEATURE_NAMES[i];
+        financialDataForFlaskAPI[flaskApiName] = financialInputInternal[internalName] !== undefined ? financialInputInternal[internalName] : 0.0;
+    }
+
+    FLASK_API_EXPECTED_FEATURE_NAMES.forEach(name => {
+        if (!financialDataForFlaskAPI.hasOwnProperty(name)) {
+            financialDataForFlaskAPI[name] = 0.0;
+            console.warn(`Flask API expected feature '${name}' was not populated from internal data after mapping, defaulting to 0.0`);
+        }
+    });
+
+    console.log("Data being sent to Flask API:", JSON.stringify(financialDataForFlaskAPI, null, 2));
+    return financialDataForFlaskAPI;
 }
 
 function getTailoredAdvice(prediction) {
@@ -149,12 +216,19 @@ module.exports = {
       path: '/ai/recommendations',
       options: { auth: 'jwt_guest_accessible' },
       handler: async (request, h) => {
-        if (!request.auth.isAuthenticated) {
+        if (!request.auth.isAuthenticated && process.env.NODE_ENV !== 'development') {
           return h.response(getDummyAIRecommendations()).code(200);
         }
 
-        const userId = request.auth.credentials.id;
+        const userId = request.auth.credentials ? request.auth.credentials.id : null;
+        if (!userId && process.env.NODE_ENV !== 'development') {
+            console.warn("/ai/recommendations called without authenticated user in production-like environment.");
+            return h.response(getDummyAIRecommendations()).code(200);
+        }
+
+
         if (!AI_SERVICE_URL) {
+            console.warn("/ai/recommendations: AI_SERVICE_URL not configured.");
             return h.response({
                 message: 'Layanan AI (rekomendasi) tidak dikonfigurasi. Berikut adalah tips umum.',
                 tips: [
@@ -166,6 +240,11 @@ module.exports = {
         }
 
         try {
+            if (!userId) {
+                 console.log("/ai/recommendations: No user ID, providing dummy recommendations (development mode or guest).");
+                 return h.response(getDummyAIRecommendations()).code(200);
+            }
+
             const financialData = await getFinancialDataForAI(supabase, userId);
             const totalSum = Object.values(financialData).reduce((sum, val) => sum + val, 0);
 
@@ -181,7 +260,18 @@ module.exports = {
             }
 
             const aiResponse = await axios.post(`${AI_SERVICE_URL}/predict`, financialData);
+            
+            if (!aiResponse.data || aiResponse.data.error) {
+                console.error("Error from Flask AI service:", aiResponse.data ? aiResponse.data.error : "No data in response");
+                throw new Error(aiResponse.data ? aiResponse.data.error : "Unknown error from AI service");
+            }
+            
             const { prediction } = aiResponse.data;
+            if (!prediction) {
+                console.error("No 'prediction' field in AI service response:", aiResponse.data);
+                throw new Error("Invalid response format from AI service: missing prediction.");
+            }
+
 
             const tailoredAdvice = getTailoredAdvice(prediction);
 
@@ -196,7 +286,17 @@ module.exports = {
           if (error.response) {
             console.error("AI Service Error Data:", error.response.data);
             console.error("AI Service Error Status:", error.response.status);
-            errorMessage = `Layanan AI mengembalikan error: ${error.response.data.error || error.response.statusText || 'Layanan Tidak Tersedia'}`;
+            let serviceErrorDetail = 'Layanan Tidak Tersedia';
+            if (error.response.data) {
+                if (typeof error.response.data.error === 'string') {
+                    serviceErrorDetail = error.response.data.error;
+                } else if (typeof error.response.data === 'string') {
+                    serviceErrorDetail = error.response.data;
+                } else {
+                    serviceErrorDetail = error.response.statusText || serviceErrorDetail;
+                }
+            }
+            errorMessage = `Layanan AI mengembalikan error: ${serviceErrorDetail}`;
           } else if (error.request) {
             console.error("AI Service No Response:", error.request);
             errorMessage = 'Tidak ada respons dari layanan AI. Mungkin sedang tidak tersedia sementara.';
