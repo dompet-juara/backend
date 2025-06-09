@@ -40,7 +40,7 @@ const init = async () => {
     host: process.env.HOST || 'localhost',
     routes: {
       cors: {
-        origin: (process.env.CORS_ORIGIN || 'http://localhost:4173,http://localhost:4174').split(','),
+        origin: (process.env.CORS_ORIGIN || '0.0.0.0').split(','),
         headers: ['Accept', 'Authorization', 'Content-Type', 'If-None-Match', 'X-Refresh-Token'],
         credentials: true,
       },
