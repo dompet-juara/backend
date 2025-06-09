@@ -1,0 +1,83 @@
+ALTER TABLE users ADD COLUMN name VARCHAR(255) NOT NULL;
+
+
+
+ALTER TABLE users ADD COLUMN email VARCHAR(255) UNIQUE NOT NULL;
+
+
+create table users (
+  uuid uuid primary key default gen_random_uuid(), -- UUID publik
+  id serial unique,                                -- ID internal
+  username text unique not null,
+  password text not null,
+  created_at timestamp default now()
+);
+
+create table refresh_tokens (
+  id serial primary key,
+  user_id integer not null references users(id) on delete cascade,
+  token text not null,
+  ip_address inet,
+  user_agent text,
+  is_revoked boolean default false,
+  created_at timestamp default now(),
+  expires_at timestamp
+);
+
+create table pemasukan (
+  id serial primary key,
+  user_id integer not null references users(id) on delete cascade,
+  jumlah numeric not null,
+  keterangan text,
+  tanggal timestamp default now()
+);
+
+create table kategori_pengeluaran (
+  id serial primary key,
+  nama text unique not null
+);
+
+insert into kategori_pengeluaran (nama) values
+('Bahan Pokok'),
+('Protein dan Gizi'),
+('Konsumsi Instan'),
+('Pengeluaran Non Esensial'),
+('Kebutuhan Primer'),
+('Barang & Jasa Tambahan'),
+('Pakaian dan Aksesoris'),
+('Pajak'),
+('Asuransi'),
+('Sosial dan Budaya');
+
+create table pengeluaran (
+  id serial primary key,
+  user_id integer not null references users(id) on delete cascade,
+  kategori_id integer references kategori_pengeluaran(id) on delete set null,
+  jumlah numeric not null,
+  keterangan text,
+  tanggal timestamp default now()
+);
+
+create index on refresh_tokens(user_id, is_revoked);
+create index on pemasukan(user_id, tanggal);
+create index on pengeluaran(user_id, tanggal);
+
+-- Tabel Kategori Pemasukan
+CREATE TABLE kategori_pemasukan (
+  id SERIAL PRIMARY KEY,
+  nama TEXT UNIQUE NOT NULL
+);
+
+-- Insert data kategori pemasukan
+INSERT INTO kategori_pemasukan (nama) VALUES
+  ('Gaji'),
+  ('Tabungan_Lama'),
+  ('Investasi'),
+  ('Pemasukan_Lainnya');
+
+-- Tambahkan kategori "Tabungan_Investasi" ke kategori_pengeluaran
+INSERT INTO kategori_pengeluaran (nama)
+VALUES ('Tabungan_Investasi');
+
+ALTER TABLE pemasukan
+ADD COLUMN kategori_id INTEGER REFERENCES kategori_pemasukan(id) ON DELETE SET NULL;
