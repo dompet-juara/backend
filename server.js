@@ -40,7 +40,7 @@ const init = async () => {
     host: process.env.HOST || 'localhost',
     routes: {
       cors: {
-        origin: (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:5174').split(','),
+        origin: (process.env.CORS_ORIGIN || 'http://localhost:4173,http://localhost:4174').split(','),
         headers: ['Accept', 'Authorization', 'Content-Type', 'If-None-Match', 'X-Refresh-Token'],
         credentials: true,
       },
@@ -52,10 +52,10 @@ const init = async () => {
   const accessTokenSecret = process.env.JWT_SECRET;
   const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET;
 
-  if (!accessTokenSecret || accessTokenSecret === 'default_access_secret_please_change') {
+  if (!accessTokenSecret || accessTokenSecret === 'IniAdalahProjekCapstoneDBSCodIngCaMpDompETJuara') {
     console.warn("Warning: JWT_SECRET is not set or is default. Please set a strong JWT_SECRET in your .env file for production.");
   }
-  if (!refreshTokenSecret || refreshTokenSecret === 'default_refresh_secret_please_change') {
+  if (!refreshTokenSecret || refreshTokenSecret === 'IniAdalahProjekCapstoneDBSCodIngCaMpDompETJuara') {
     console.warn("Warning: REFRESH_TOKEN_SECRET is not set or is default. Please set a strong REFRESH_TOKEN_SECRET in your .env file for production.");
   }
 
@@ -80,7 +80,6 @@ const init = async () => {
         maxAgeSec: 15 * 60, timeSkewSec: 15,
     },
     validate: validate,
-    mode: 'try'
   });
 
 
