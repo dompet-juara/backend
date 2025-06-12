@@ -65,7 +65,7 @@ Fokus utama adalah pada:
 
 ```
 backend/
-├── .env                  # Variabel environment (tidak di-commit)
+├── .env                  # Variabel environment
 ├── .gitignore
 ├── LICENSE
 ├── package.json
@@ -94,7 +94,7 @@ backend/
 
 Sebelum menjalankan aplikasi, Anda perlu mengatur variabel *environment*.
 
-1.  Salin file `.env.example` (jika ada) menjadi `.env`, atau buat file `.env` baru di *root* proyek.
+1.  Buat file `.env` baru di *root* proyek.
 2.  Isi variabel berikut dengan nilai yang sesuai:
     ```env
     SUPABASE_URL=YOUR_SUPABASE_PROJECT_URL
