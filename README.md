@@ -63,31 +63,33 @@ Fokus utama adalah pada:
 
 ## 🗂️ Struktur Direktori
 
-```
-backend/
-├── .env                  # Variabel environment
-├── .gitignore
-├── LICENSE
-├── package.json
-├── README.md
-├── schema.txt            # Deskripsi skema database
-├── server.js             # Titik masuk utama aplikasi
-├── supabase.js           # Konfigurasi klien Supabase
-├── routes/               # Definisi route dan handler
-│   ├── ai.js
-│   ├── auth.js
-│   ├── chat.js
-│   ├── dashboard.js
-│   ├── income.js
-│   ├── outcome.js
-│   └── user.js
-├── services/             # Logika bisnis dan integrasi layanan
-│   └── geminiService.js
-├── tfjs_model/           # Model TensorFlow.js
-│   ├── group1-shard1of1.bin
-│   └── model.json
-└── utils/                # Utilitas dan data pendukung
-    └── dummyData.js
+Berikut adalah struktur direktori utama dari proyek backend "Dompet Juara":
+```text
+backend-main/
+├── utils/                      # Folder untuk fungsi-fungsi utilitas dan helper
+│   └── dummyData.js            # Berisi data dummy untuk testing dan development
+├── tfjs_model/                 # Folder untuk model machine learning TensorFlow.js
+│   ├── model.json              # Konfigurasi model TensorFlow.js
+│   └── group1-shard1of1.bin    # File binary model TensorFlow.js
+├── services/                   # Folder untuk layanan-layanan aplikasi
+│   └── geminiService.js        # Layanan untuk integrasi dengan Google Gemini AI
+├── routes/                     # Folder untuk endpoint API
+│   ├── user.js                 # Endpoint untuk manajemen user
+│   ├── outcome.js              # Endpoint untuk pengelolaan pengeluaran
+│   ├── income.js               # Endpoint untuk pengelolaan pemasukan
+│   ├── dashboard.js            # Endpoint untuk data dashboard
+│   ├── chat.js                 # Endpoint untuk fitur chat
+│   ├── auth.js                 # Endpoint untuk autentikasi
+│   └── ai.js                   # Endpoint untuk fitur AI
+├── .env                        # File konfigurasi environment variables (API keys, database credentials, dll)
+├── supabase.js                 # Konfigurasi koneksi ke Supabase (database)
+├── server.js                   # File utama server Node.js
+├── schema.txt                  # Skema database dan struktur data
+├── package.json                # Konfigurasi dependensi dan script npm
+├── package-lock.json           # Lock file untuk versi dependensi
+├── README.md                   # Dokumentasi proyek
+├── LICENSE                     # Lisensi proyek
+└── .gitignore                  # File untuk mengabaikan file dalam git
 ```
 
 ## ⚙️ Konfigurasi & Setup Awal (`.env`)
